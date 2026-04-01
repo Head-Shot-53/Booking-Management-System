@@ -111,7 +111,9 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            BASE_DIR / "templates",
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -258,3 +260,29 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+
+# Email
+
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default=("django.core.mail.backends.console.EmailBackend"),
+)
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default="Booking Management System <no-reply@example.com>"
+)
+
+EMAIL_HOST = env("EMAIL_HOST", default="localhost")
+
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)

@@ -1,0 +1,15 @@
+Hello {{ booking.user.first_name|default:"there" }},
+
+Your booking has been cancelled.
+
+Booking: {{ booking.title }}
+Resource: {{ booking.resource.name }}
+Location: {{ booking.resource.location }}
+
+Start: {{ start_at|date:"Y-m-d H:i" }}
+End: {{ end_at|date:"Y-m-d H:i" }}
+
+Status: {{ booking.status }}
+
+Thank you,
+Booking Management System

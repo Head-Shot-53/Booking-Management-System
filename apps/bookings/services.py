@@ -10,6 +10,7 @@ from apps.resources.models import Resource
 
 from .exceptions import BookingConflictError, BookingStateError, BookingValidationError
 from .models import Booking, BookingStatus
+from .notifications import schedule_booking_cancellation, schedule_booking_confirmation
 
 logger = logging.getLogger("booking_management.booking")
 
@@ -138,6 +139,8 @@ def create_booking(
         old_data={},
         new_data=get_booking_snapshot(booking),
     )
+
+    schedule_booking_confirmation(booking_id=booking.id)
 
     logger.info(
         "booking_created",
@@ -334,6 +337,8 @@ def cancel_booking(*, booking: Booking, changed_by=None) -> Booking:
         old_data=old_data,
         new_data=get_booking_snapshot(locked_booking),
     )
+
+    schedule_booking_cancellation(booking_id=locked_booking.id)
 
     logger.info(
         "booking_cancelled",

@@ -29,6 +29,9 @@ class JsonFormatter(logging.Formatter):
         "completed_count",
         "skipped_count",
         "failed_count",
+        "task_name",
+        "notification_type",
+        "sent_count",
     )
 
     def format(self, record: logging.LogRecord) -> str:

@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 from threading import Barrier, Lock, Thread
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -68,7 +69,6 @@ def test_concurrent_booking_creation_allows_only_one(user, resource):
 
         try:
             thread_user = User.objects.get(pk=user_id)
-
             thread_resource = Resource.objects.get(pk=resource_id)
 
             barrier.wait(timeout=5)
@@ -99,11 +99,12 @@ def test_concurrent_booking_creation_allows_only_one(user, resource):
 
     thread_b = Thread(target=create_booking_in_thread, args=("Booking B",))
 
-    thread_a.start()
-    thread_b.start()
+    with patch("apps.bookings.tasks.send_booking_confirmation_email.delay"):
+        thread_a.start()
+        thread_b.start()
 
-    thread_a.join(timeout=10)
-    thread_b.join(timeout=10)
+        thread_a.join(timeout=10)
+        thread_b.join(timeout=10)
 
     assert not thread_a.is_alive()
     assert not thread_b.is_alive()
