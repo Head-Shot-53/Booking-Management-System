@@ -1,0 +1,17 @@
+Hello {{ booking.user.first_name|default:"there" }},
+
+Your booking starts soon.
+
+Booking: {{ booking.title }}
+Resource: {{ booking.resource.name }}
+Location: {{ booking.resource.location }}
+
+Start: {{ start_at|date:"Y-m-d H:i" }}
+End: {{ end_at|date:"Y-m-d H:i" }}
+
+Status: {{ booking.status }}
+
+Please make sure you are ready before the booking begins.
+
+Thank you,
+Booking Management System

@@ -32,6 +32,7 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
+    reminder_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ("-start_at", "-created_at")
@@ -49,6 +50,10 @@ class Booking(models.Model):
             models.Index(
                 fields=("resource", "start_at", "end_at"),
                 name="booking_resource_time_idx",
+            ),
+            models.Index(
+                fields=("status", "reminder_sent_at", "start_at"),
+                name="booking_reminder_idx",
             ),
         ]
 

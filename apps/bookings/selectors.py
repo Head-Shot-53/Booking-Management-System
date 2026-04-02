@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -123,4 +123,28 @@ def get_expired_confirmed_booking_ids(
         Booking.objects.filter(status=BookingStatus.CONFIRMED, end_at__lte=current_time)
         .order_by("end_at", "id")
         .values_list("id", flat=True)[:limit]
+    )
+
+
+def get_upcoming_booking_reminder_ids(
+    *,
+    current_time: datetime,
+    reminder_window: timedelta = timedelta(hours=1),
+    limit: int = 100,
+) -> list[int]:
+
+    window_end = current_time + reminder_window
+
+    return list(
+        Booking.objects.filter(
+            status=BookingStatus.CONFIRMED,
+            reminder_sent_at__isnull=True,
+            start_at__gt=current_time,
+            start_at__lte=window_end,
+        )
+        .order_by("start_at", "id")
+        .values_list(
+            "id",
+            flat=True,
+        )[:limit]
     )

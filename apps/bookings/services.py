@@ -252,7 +252,10 @@ def update_booking(
     )
 
     locked_resources = _lock_resources_by_ids(
-        resource_ids=[locked_booking.resource_id, target_resource_id]
+        resource_ids=[
+            locked_booking.resource_id,
+            target_resource_id,
+        ]
     )
 
     target_resource = locked_resources[target_resource_id]
@@ -262,7 +265,9 @@ def update_booking(
     target_end_at = end_at if end_at is not None else locked_booking.end_at
 
     validate_booking_creation(
-        resource=target_resource, start_at=target_start_at, end_at=target_end_at
+        resource=target_resource,
+        start_at=target_start_at,
+        end_at=target_end_at,
     )
 
     _validate_no_booking_conflict(
@@ -272,11 +277,25 @@ def update_booking(
         exclude_booking_id=locked_booking.id,
     )
 
+    schedule_changed = (
+        target_start_at != locked_booking.start_at
+        or target_end_at != locked_booking.end_at
+    )
+
     locked_booking.resource = target_resource
     locked_booking.start_at = target_start_at
     locked_booking.end_at = target_end_at
 
-    update_fields = ["resource", "start_at", "end_at", "updated_at"]
+    update_fields = [
+        "resource",
+        "start_at",
+        "end_at",
+        "updated_at",
+    ]
+
+    if schedule_changed:
+        locked_booking.reminder_sent_at = None
+        update_fields.append("reminder_sent_at")
 
     if title is not None:
         locked_booking.title = title
@@ -300,7 +319,7 @@ def update_booking(
         "booking_updated",
         extra={
             "booking_id": locked_booking.id,
-            "resource_id": (locked_booking.resource_id),
+            "resource_id": locked_booking.resource_id,
             "owner_id": locked_booking.user_id,
             "actor_id": getattr(
                 changed_by,

@@ -26,6 +26,7 @@ class JsonFormatter(logging.Formatter):
         "error_code",
         "task_id",
         "processed_count",
+        "queued_count",
         "completed_count",
         "skipped_count",
         "failed_count",
