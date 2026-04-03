@@ -97,14 +97,18 @@ def complete_expired_bookings(self, batch_size: int = 100) -> dict[str, int]:
 )
 def send_booking_confirmation_email(self, booking_id: int) -> dict:
     try:
-        booking = Booking.objects.select_related("user", "resource").get(pk=booking_id)
+        booking = Booking.objects.select_related(
+            "user",
+            "resource",
+        ).get(pk=booking_id)
+
     except Booking.DoesNotExist:
         logger.warning(
             "booking_confirmation_email_skipped",
             extra={
                 "task_id": self.request.id,
                 "booking_id": booking_id,
-                "notification_type": ("booking_confirmation"),
+                "notification_type": "booking_confirmation",
             },
         )
 
@@ -114,17 +118,36 @@ def send_booking_confirmation_email(self, booking_id: int) -> dict:
             "booking_id": booking_id,
         }
 
-    start_at = timezone.localtime(booking.start_at)
+    if booking.status != BookingStatus.CONFIRMED:
+        logger.info(
+            "booking_confirmation_email_skipped",
+            extra={
+                "task_id": self.request.id,
+                "booking_id": booking.id,
+                "notification_type": "booking_confirmation",
+            },
+        )
 
+        return {
+            "status": "skipped",
+            "reason": "booking_not_confirmed",
+            "booking_id": booking.id,
+        }
+
+    start_at = timezone.localtime(booking.start_at)
     end_at = timezone.localtime(booking.end_at)
 
     message = render_to_string(
         "emails/bookings/confirmation.txt",
-        {"booking": booking, "start_at": start_at, "end_at": end_at},
+        {
+            "booking": booking,
+            "start_at": start_at,
+            "end_at": end_at,
+        },
     )
 
     sent_count = send_mail(
-        subject=(f"Booking confirmed: {booking.title}"),
+        subject=f"Booking confirmed: {booking.title}",
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[booking.user.email],
@@ -137,7 +160,7 @@ def send_booking_confirmation_email(self, booking_id: int) -> dict:
             "task_id": self.request.id,
             "booking_id": booking.id,
             "owner_id": booking.user_id,
-            "notification_type": ("booking_confirmation"),
+            "notification_type": "booking_confirmation",
             "sent_count": sent_count,
         },
     )
@@ -155,14 +178,18 @@ def send_booking_confirmation_email(self, booking_id: int) -> dict:
 )
 def send_booking_cancellation_email(self, booking_id: int) -> dict:
     try:
-        booking = Booking.objects.select_related("user", "resource").get(pk=booking_id)
+        booking = Booking.objects.select_related(
+            "user",
+            "resource",
+        ).get(pk=booking_id)
+
     except Booking.DoesNotExist:
         logger.warning(
             "booking_cancellation_email_skipped",
             extra={
                 "task_id": self.request.id,
                 "booking_id": booking_id,
-                "notification_type": ("booking_cancellation"),
+                "notification_type": "booking_cancellation",
             },
         )
 
@@ -172,17 +199,38 @@ def send_booking_cancellation_email(self, booking_id: int) -> dict:
             "booking_id": booking_id,
         }
 
-    start_at = timezone.localtime(booking.start_at)
+    if booking.status != BookingStatus.CANCELLED:
+        logger.info(
+            "booking_cancellation_email_skipped",
+            extra={
+                "task_id": self.request.id,
+                "booking_id": booking.id,
+                "owner_id": booking.user_id,
+                "notification_type": "booking_cancellation",
+                "reason": "booking_not_cancelled",
+            },
+        )
 
+        return {
+            "status": "skipped",
+            "reason": "booking_not_cancelled",
+            "booking_id": booking.id,
+        }
+
+    start_at = timezone.localtime(booking.start_at)
     end_at = timezone.localtime(booking.end_at)
 
     message = render_to_string(
         "emails/bookings/cancellation.txt",
-        {"booking": booking, "start_at": start_at, "end_at": end_at},
+        {
+            "booking": booking,
+            "start_at": start_at,
+            "end_at": end_at,
+        },
     )
 
     sent_count = send_mail(
-        subject=(f"Booking cancelled: {booking.title}"),
+        subject=f"Booking cancelled: {booking.title}",
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[booking.user.email],
@@ -195,7 +243,7 @@ def send_booking_cancellation_email(self, booking_id: int) -> dict:
             "task_id": self.request.id,
             "booking_id": booking.id,
             "owner_id": booking.user_id,
-            "notification_type": ("booking_cancellation"),
+            "notification_type": "booking_cancellation",
             "sent_count": sent_count,
         },
     )

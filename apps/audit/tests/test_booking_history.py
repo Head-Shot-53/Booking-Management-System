@@ -246,3 +246,28 @@ def test_booking_history_is_ordered_newest_first(user, resource):
 
     assert history[0].action == BookingHistoryAction.UPDATED
     assert history[1].action == BookingHistoryAction.CREATED
+
+
+@pytest.mark.django_db
+def test_title_update_does_not_reset_reminder(user, resource):
+    reminder_sent_at = timezone.now()
+
+    booking = Booking.objects.create(
+        user=user,
+        resource=resource,
+        start_at=future_datetime(10),
+        end_at=future_datetime(11),
+        title="Old title",
+        reminder_sent_at=reminder_sent_at,
+    )
+
+    updated = update_booking(
+        booking=booking,
+        title="New title",
+        changed_by=user,
+    )
+
+    updated.refresh_from_db()
+
+    assert updated.title == "New title"
+    assert updated.reminder_sent_at == reminder_sent_at

@@ -349,41 +349,45 @@ def test_booking_cannot_be_moved_to_inactive_resource(category, booking):
 
 @pytest.mark.django_db
 def test_reschedule_resets_reminder_sent_at(user, resource):
-    now = timezone.now()
+    reminder_sent_at = timezone.now()
 
     booking = Booking.objects.create(
         user=user,
         resource=resource,
-        start_at=now + timedelta(hours=2),
-        end_at=now + timedelta(hours=3),
+        start_at=future_datetime(10),
+        end_at=future_datetime(11),
         title="Meeting",
-        reminder_sent_at=now,
+        reminder_sent_at=reminder_sent_at,
     )
-
-    new_start = now + timedelta(hours=4)
-
-    new_end = now + timedelta(hours=5)
 
     updated = update_booking(
-        booking=booking, start_at=new_start, end_at=new_end, changed_by=user
+        booking=booking,
+        start_at=future_datetime(12),
+        end_at=future_datetime(13),
+        changed_by=user,
     )
+
+    updated.refresh_from_db()
 
     assert updated.reminder_sent_at is None
 
 
 @pytest.mark.django_db
 def test_title_update_does_not_reset_reminder(user, resource):
-    now = timezone.now()
+    reminder_sent_at = timezone.now()
 
     booking = Booking.objects.create(
         user=user,
         resource=resource,
-        start_at=now + timedelta(hours=2),
-        end_at=now + timedelta(hours=3),
+        start_at=future_datetime(10),
+        end_at=future_datetime(11),
         title="Old title",
-        reminder_sent_at=now,
+        reminder_sent_at=reminder_sent_at,
     )
 
     updated = update_booking(booking=booking, title="New title", changed_by=user)
 
-    assert updated.reminder_sent_at == booking.reminder_sent_at
+    updated.refresh_from_db()
+
+    assert updated.title == "New title"
+    assert updated.reminder_sent_at == reminder_sent_at

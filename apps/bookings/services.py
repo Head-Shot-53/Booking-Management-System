@@ -252,10 +252,7 @@ def update_booking(
     )
 
     locked_resources = _lock_resources_by_ids(
-        resource_ids=[
-            locked_booking.resource_id,
-            target_resource_id,
-        ]
+        resource_ids=[locked_booking.resource_id, target_resource_id]
     )
 
     target_resource = locked_resources[target_resource_id]
@@ -263,6 +260,10 @@ def update_booking(
     target_start_at = start_at if start_at is not None else locked_booking.start_at
 
     target_end_at = end_at if end_at is not None else locked_booking.end_at
+
+    target_title = title if title is not None else locked_booking.title
+
+    target_notes = notes if notes is not None else locked_booking.notes
 
     validate_booking_creation(
         resource=target_resource,
@@ -285,25 +286,28 @@ def update_booking(
     locked_booking.resource = target_resource
     locked_booking.start_at = target_start_at
     locked_booking.end_at = target_end_at
+    locked_booking.title = target_title
+    locked_booking.notes = target_notes
+
+    if schedule_changed:
+        locked_booking.reminder_sent_at = None
+
+    new_data = get_booking_snapshot(locked_booking)
+
+    if old_data == new_data:
+        return locked_booking
 
     update_fields = [
         "resource",
         "start_at",
         "end_at",
+        "title",
+        "notes",
         "updated_at",
     ]
 
     if schedule_changed:
-        locked_booking.reminder_sent_at = None
         update_fields.append("reminder_sent_at")
-
-    if title is not None:
-        locked_booking.title = title
-        update_fields.append("title")
-
-    if notes is not None:
-        locked_booking.notes = notes
-        update_fields.append("notes")
 
     locked_booking.save(update_fields=update_fields)
 
@@ -312,7 +316,7 @@ def update_booking(
         action=BookingHistoryAction.UPDATED,
         changed_by=changed_by,
         old_data=old_data,
-        new_data=get_booking_snapshot(locked_booking),
+        new_data=new_data,
     )
 
     logger.info(

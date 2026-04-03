@@ -128,3 +128,25 @@ def test_refresh_token_returns_new_access_token(api_client, user):
 
     assert response.status_code == status.HTTP_200_OK
     assert "access" in response.data
+
+
+@pytest.mark.django_db
+def test_registration_cannot_set_admin_role(api_client):
+    response = api_client.post(
+        reverse("accounts:register"),
+        {
+            "email": "attacker@example.com",
+            "password": ("StrongPassword123!"),
+            "first_name": "Attacker",
+            "role": "ADMIN",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+
+    user = User.objects.get(email="attacker@example.com")
+
+    assert user.role == UserRole.USER
+    assert user.is_staff is False
+    assert user.is_superuser is False

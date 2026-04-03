@@ -117,3 +117,39 @@ def test_confirmation_email_skips_missing_booking(settings):
     }
 
     assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_confirmation_email_skips_cancelled_booking(booking, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    booking.status = BookingStatus.CANCELLED
+
+    booking.cancelled_at = timezone.now()
+
+    booking.save(update_fields=["status", "cancelled_at", "updated_at"])
+
+    mail.outbox.clear()
+
+    result = send_booking_confirmation_email.run(booking.id)
+
+    assert result["status"] == "skipped"
+
+    assert result["reason"] == "booking_not_confirmed"
+
+    assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_cancellation_email_skips_active_booking(booking, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    mail.outbox.clear()
+
+    result = send_booking_cancellation_email.run(booking.id)
+
+    assert result["status"] == "skipped"
+
+    assert result["reason"] == "booking_not_cancelled"
+
+    assert len(mail.outbox) == 0
